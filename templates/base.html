@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}EduTrack DBMS — University Database Management System{% endblock %}</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Main Style -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand-header">
+                <div class="brand-icon">🎓</div>
+                <div class="brand-text">
+                    <h1>EduTrack</h1>
+                    <span class="brand-badge">DBMS v1.0</span>
+                </div>
+            </div>
+
+            <ul class="nav-links">
+                <li class="nav-category">Main Menu</li>
+                <li class="nav-item {% if request.path == '/' %}active{% endif %}">
+                    <a href="{{ url_for('dashboard') }}">
+                        <span class="nav-icon">📊</span>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item {% if request.path == '/students' %}active{% endif %}">
+                    <a href="{{ url_for('students_page') }}">
+                        <span class="nav-icon">👨‍🎓</span>
+                        <span>Students</span>
+                    </a>
+                </li>
+                <li class="nav-item {% if request.path == '/courses' %}active{% endif %}">
+                    <a href="{{ url_for('courses_page') }}">
+                        <span class="nav-icon">📚</span>
+                        <span>Courses & Depts</span>
+                    </a>
+                </li>
+                <li class="nav-item {% if request.path == '/enrollments' %}active{% endif %}">
+                    <a href="{{ url_for('enrollments_page') }}">
+                        <span class="nav-icon">📝</span>
+                        <span>Enrollments & Grades</span>
+                    </a>
+                </li>
+
+                <li class="nav-category">DBMS Tools</li>
+                <li class="nav-item {% if request.path == '/sql-console' %}active{% endif %}">
+                    <a href="{{ url_for('sql_console') }}">
+                        <span class="nav-icon">⚡</span>
+                        <span>SQL Playground</span>
+                    </a>
+                </li>
+                <li class="nav-item {% if request.path == '/schema-viewer' %}active{% endif %}">
+                    <a href="{{ url_for('schema_viewer') }}">
+                        <span class="nav-icon">🧩</span>
+                        <span>ER Schema Viewer</span>
+                    </a>
+                </li>
+                <li class="nav-item {% if request.path == '/viva-guide' %}active{% endif %}">
+                    <a href="{{ url_for('viva_guide_page') }}">
+                        <span class="nav-icon">📖</span>
+                        <span>Viva Q&A Guide</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <button type="button" class="quick-db-reset-btn" onclick="resetDatabase()">
+                    <span>🔄</span> Reset / Re-seed DB
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Wrapper -->
+        <main class="main-wrapper">
+            <!-- Top Navbar -->
+            <header class="top-navbar">
+                <div class="page-title">
+                    {% block page_title %}<span>Dashboard</span>{% endblock %}
+                </div>
+                <div class="nav-actions">
+                    <a href="{{ url_for('export_students_csv') }}" class="btn btn-secondary btn-sm" title="Export Students to CSV">
+                        <span>📥</span> Export CSV
+                    </a>
+                    <a href="{{ url_for('sql_console') }}" class="btn btn-primary btn-sm">
+                        <span>⚡</span> Run SQL Query
+                    </a>
+                </div>
+            </header>
+
+            <!-- Content Body -->
+            <div class="content-body">
+                <!-- Flash Messages -->
+                <div class="flash-container">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">
+                                    <span>{{ message }}</span>
+                                    <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;color:inherit;cursor:pointer;font-size:16px;">&times;</button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                </div>
+
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Core Scripts -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

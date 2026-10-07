@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block page_title %}
+<span>📖 DBMS Viva Q&A & Theory Guide</span>
+{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 24px;">
+
+    <!-- Summary Header -->
+    <div class="card-panel">
+        <div class="panel-header">
+            <div>
+                <h3 class="panel-title">🎓 Academic Viva & Technical Defense Kit</h3>
+                <p class="panel-subtitle">Comprehensive reference covering core DBMS principles, schema design decisions, and sample SQL solutions</p>
+            </div>
+            <a href="{{ url_for('sql_console') }}" class="btn btn-primary btn-sm">Open SQL Console</a>
+        </div>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6;">
+            This section equips you with precise theoretical and practical answers commonly asked during project demonstrations, university lab evaluations, and DBMS viva examinations.
+        </p>
+    </div>
+
+    <!-- Core DBMS Concepts Grid -->
+    <div class="grid-2">
+        <!-- Normalization (1NF to 3NF) -->
+        <div class="card-panel">
+            <h3 class="panel-title" style="color: #818CF8; margin-bottom: 12px;">📐 Normalization in EduTrack</h3>
+            <div style="font-size: 0.88rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                    <strong style="color: #FFF;">1NF (First Normal Form):</strong>
+                    <p style="font-size: 0.82rem; margin-top: 2px;">Every column contains atomic values. Composite attributes like student name are split into <code>first_name</code> and <code>last_name</code>.</p>
+                </div>
+                <div>
+                    <strong style="color: #FFF;">2NF (Second Normal Form):</strong>
+                    <p style="font-size: 0.82rem; margin-top: 2px;">No partial functional dependency. In <code>enrollments</code>, grades depend on the entire composite key <code>(student_id, course_id, semester, academic_year)</code>.</p>
+                </div>
+                <div>
+                    <strong style="color: #FFF;">3NF (Third Normal Form):</strong>
+                    <p style="font-size: 0.82rem; margin-top: 2px;">No transitive dependencies. <code>students</code> stores only <code>dept_id</code> instead of repeating <code>dept_name</code> and <code>building</code>.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACID Properties -->
+        <div class="card-panel">
+            <h3 class="panel-title" style="color: #34D399; margin-bottom: 12px;">🛡️ ACID Properties Implementation</h3>
+            <div style="font-size: 0.88rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                    <strong style="color: #FFF;">Atomicity:</strong>
+                    <p style="font-size: 0.82rem; margin-top: 2px;">Enforced through SQLite transaction blocks (<code>BEGIN TRANSACTION</code>, <code>COMMIT</code>, <code>ROLLBACK</code>).</p>
+                </div>
+                <div>
+                    <strong style="color: #FFF;">Consistency:</strong>
+                    <p style="font-size: 0.82rem; margin-top: 2px;">Guaranteed via Foreign Key constraints and schema CHECK constraints (e.g., <code>gpa >= 0.00 AND gpa <= 4.00</code>).</p>
+                </div>
+                <div>
+                    <strong style="color: #FFF;">Isolation & Durability:</strong>
+                    <p style="font-size: 0.82rem; margin-top: 2px;">SQLite guarantees serialized/WAL transaction isolation and writes completed changes to disk log storage.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Frequent Viva Questions & Answers -->
+    <div class="card-panel">
+        <h3 class="panel-title" style="margin-bottom: 16px;">❓ Top 6 Viva Questions & Concise Answers</h3>
+        
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                <h4 style="font-size: 0.95rem; color: #38BDF8; margin-bottom: 6px;">Q1: How do you handle the Many-to-Many (M:N) relationship between Students and Courses?</h4>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                    <strong>Answer:</strong> An associative entity (junction table) named <code>enrollments</code> is created containing foreign keys referencing <code>students(student_id)</code> and <code>courses(course_id)</code> along with descriptive attributes such as <code>semester</code>, <code>grade</code>, and <code>status</code>.
+                </p>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                <h4 style="font-size: 0.95rem; color: #38BDF8; margin-bottom: 6px;">Q2: What is the purpose of the Triggers in your database?</h4>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                    <strong>Answer:</strong> We have implemented automated triggers including <code>trg_after_enrollment_grade_update</code> which automatically recalculates a student's cumulative weighted GPA whenever course grades are entered, and <code>trg_after_student_insert</code> which logs creation events into an <code>audit_logs</code> table.
+                </p>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                <h4 style="font-size: 0.95rem; color: #38BDF8; margin-bottom: 6px;">Q3: What is the difference between a Database View and a Base Table?</h4>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                    <strong>Answer:</strong> A Base Table physically stores data records on disk. A Database View (such as <code>v_student_transcript</code>) is a stored SQL query that acts as a virtual table dynamically assembled at query time without consuming duplicate disk storage.
+                </p>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                <h4 style="font-size: 0.95rem; color: #38BDF8; margin-bottom: 6px;">Q4: What is the role of Indexes in your project?</h4>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                    <strong>Answer:</strong> Indexes (like <code>idx_students_roll</code> and <code>idx_enrollments_student</code>) build B-tree search indexes over frequently searched columns, reducing time complexity from an $O(N)$ full table scan to $O(\log N)$ fast index search.
+                </p>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                <h4 style="font-size: 0.95rem; color: #38BDF8; margin-bottom: 6px;">Q5: What is the difference between WHERE and HAVING clauses in SQL?</h4>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                    <strong>Answer:</strong> <code>WHERE</code> filters individual rows <em>before</em> any grouping is applied. <code>HAVING</code> filters aggregate groups <em>after</em> the <code>GROUP BY</code> clause has been computed.
+                </p>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                <h4 style="font-size: 0.95rem; color: #38BDF8; margin-bottom: 6px;">Q6: What is a Correlated Subquery and where is it used?</h4>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                    <strong>Answer:</strong> A correlated subquery is a subquery that depends on values from the outer query. In our project, it is used to determine the top-ranking student within each individual department.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

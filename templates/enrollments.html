@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block page_title %}
+<span>📝 Course Enrollments & Grade System</span>
+{% endblock %}
+
+{% block content %}
+<div class="card-panel">
+    <div class="panel-header">
+        <div>
+            <h3 class="panel-title">📝 Student Enrollments (Associative Entity / Junction Table)</h3>
+            <p class="panel-subtitle">
+                Demonstrates M:N relationship decomposition and automatic GPA recalculation via Trigger: <code>trg_after_enrollment_grade_update</code>
+            </p>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="openModal('addEnrollmentModal')">
+            <span>➕</span> Enroll Student in Course
+        </button>
+    </div>
+
+    <!-- Trigger Callout Box -->
+    <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: var(--radius-md); padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 14px;">
+        <div style="font-size: 24px;">💡</div>
+        <div style="font-size: 0.85rem; color: var(--text-secondary);">
+            <strong>DBMS Trigger in Action:</strong> When you assign or modify a grade below, SQLite automatically executes the 
+            <code>trg_after_enrollment_grade_update</code> trigger which computes the weighted credit GPA and updates <code>students.gpa</code> immediately in the background.
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Enrollment ID</th>
+                    <th>Student Name</th>
+                    <th>Roll Number</th>
+                    <th>Course Code & Title</th>
+                    <th>Term</th>
+                    <th>Grade</th>
+                    <th>Score (%)</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in enrollments %}
+                <tr>
+                    <td><code>#{{ e.enrollment_id }}</code></td>
+                    <td><strong>{{ e.student_name }}</strong></td>
+                    <td><code>{{ e.roll_number }}</code></td>
+                    <td>
+                        <strong>{{ e.course_code }}</strong> — {{ e.course_title }}
+                        <span class="badge badge-neutral" style="font-size:0.7rem;">{{ e.credits }} cr</span>
+                    </td>
+                    <td><span class="badge badge-info">{{ e.semester }} {{ e.academic_year }}</span></td>
+                    <td>
+                        {% if e.grade %}
+                            <span class="badge badge-success">{{ e.grade }}</span>
+                        {% else %}
+                            <span class="badge badge-warning">Pending (IP)</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if e.numeric_grade %}
+                            <strong>{{ e.numeric_grade }}%</strong>
+                        {% else %}
+                            <span style="color: var(--text-muted);">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if e.status == 'Completed' %}
+                            <span class="badge badge-success">Completed</span>
+                        {% elif e.status == 'Enrolled' %}
+                            <span class="badge badge-primary">Enrolled</span>
+                        {% else %}
+                            <span class="badge badge-danger">{{ e.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="openGradeModal({{ e.enrollment_id }}, '{{ e.grade or 'A' }}', '{{ e.numeric_grade or '90' }}', '{{ e.student_name }}', '{{ e.course_code }}')">
+                            ⭐ Assign Grade
+                        </button>
+                        <form method="POST" action="{{ url_for('enrollment_delete_action', enrollment_id=e.enrollment_id) }}" style="display:inline;" onsubmit="return confirm('Remove this enrollment record?')">
+                            <button type="submit" class="btn btn-danger btn-sm" title="Drop Enrollment">
+                                🗑️
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ==================================================================== -->
+<!-- MODAL: ENROLL STUDENT -->
+<!-- ==================================================================== -->
+<div class="modal-overlay" id="addEnrollmentModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 class="modal-title">➕ Course Enrollment</h3>
+            <button class="modal-close" onclick="closeModal('addEnrollmentModal')">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('api_enrollments') }}">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Select Student *</label>
+                    <select name="student_id" class="form-control" required>
+                        {% for s in students %}
+                        <option value="{{ s.student_id }}">{{ s.roll_number }} — {{ s.first_name }} {{ s.last_name }} ({{ s.dept_code }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Select Course *</label>
+                    <select name="course_id" class="form-control" required>
+                        {% for c in courses %}
+                        <option value="{{ c.course_id }}">{{ c.course_code }} — {{ c.course_title }} ({{ c.credits }} Credits)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Semester</label>
+                        <select name="semester" class="form-control">
+                            <option value="Fall">Fall</option>
+                            <option value="Spring">Spring</option>
+                            <option value="Summer">Summer</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Academic Year</label>
+                        <input type="number" name="academic_year" class="form-control" value="2024">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addEnrollmentModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Complete Enrollment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==================================================================== -->
+<!-- MODAL: UPDATE GRADE -->
+<!-- ==================================================================== -->
+<div class="modal-overlay" id="updateGradeModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div>
+                <h3 class="modal-title">⭐ Assign / Update Grade</h3>
+                <div style="font-size: 0.8rem; color: var(--text-muted);" id="gradeStudentInfo">Student - Course</div>
+            </div>
+            <button class="modal-close" onclick="closeModal('updateGradeModal')">&times;</button>
+        </div>
+        <form id="gradeModalForm" method="POST" action="">
+            <input type="hidden" id="gradeEnrollmentId" name="enrollment_id">
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Letter Grade *</label>
+                        <select name="grade" id="gradeSelect" class="form-control" required>
+                            <option value="A+">A+ (4.00 - Outstanding)</option>
+                            <option value="A">A (3.75 - Excellent)</option>
+                            <option value="B+">B+ (3.30 - Very Good)</option>
+                            <option value="B">B (3.00 - Good)</option>
+                            <option value="C+">C+ (2.50 - Satisfactory)</option>
+                            <option value="C">C (2.00 - Pass)</option>
+                            <option value="D">D (1.00 - Marginal)</option>
+                            <option value="F">F (0.00 - Fail)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Numeric Score (%)</label>
+                        <input type="number" step="0.5" name="numeric_grade" id="gradeNumeric" class="form-control" min="0" max="100" value="95">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-control">
+                        <option value="Completed">Completed</option>
+                        <option value="Enrolled">Enrolled</option>
+                        <option value="Dropped">Dropped</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('updateGradeModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit Grade & Recalculate GPA</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

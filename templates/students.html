@@ -1,0 +1,306 @@
+{% extends 'base.html' %}
+
+{% block page_title %}
+<span>👨‍🎓 Student Information Management</span>
+{% endblock %}
+
+{% block content %}
+<div class="card-panel">
+    <!-- Top Filter / Search / Add Bar -->
+    <div class="panel-header">
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <!-- Search Form -->
+            <form method="GET" action="{{ url_for('students_page') }}" style="display: flex; gap: 8px;">
+                <div class="search-box">
+                    <span>🔍</span>
+                    <input type="text" name="search" placeholder="Search name, roll, email..." value="{{ current_search }}">
+                </div>
+
+                <select name="dept_id" class="form-control" style="width: auto; padding: 6px 12px;" onchange="this.form.submit()">
+                    <option value="">All Departments</option>
+                    {% for d in departments %}
+                    <option value="{{ d.dept_id }}" {% if current_dept == d.dept_id %}selected{% endif %}>
+                        {{ d.dept_code }} - {{ d.dept_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+
+                {% if current_search or current_dept %}
+                <a href="{{ url_for('students_page') }}" class="btn btn-secondary btn-sm" title="Clear Filters">Clear</a>
+                {% endif %}
+            </form>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <button type="button" class="btn btn-primary" onclick="openModal('addStudentModal')">
+                <span>➕</span> Add New Student
+            </button>
+        </div>
+    </div>
+
+    <!-- Students Table -->
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Roll No</th>
+                    <th>Full Name</th>
+                    <th>Email</th>
+                    <th>Department</th>
+                    <th>Courses</th>
+                    <th>GPA</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if students|length == 0 %}
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                        No students found matching your query.
+                    </td>
+                </tr>
+                {% else %}
+                {% for s in students %}
+                <tr>
+                    <td><code>{{ s.roll_number }}</code></td>
+                    <td>
+                        <strong>{{ s.first_name }} {{ s.last_name }}</strong>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ s.gender or 'N/A' }} • DOB: {{ s.dob or 'N/A' }}</div>
+                    </td>
+                    <td><a href="mailto:{{ s.email }}" style="color: var(--primary-light);">{{ s.email }}</a></td>
+                    <td><span class="badge badge-info">{{ s.dept_code }}</span></td>
+                    <td><span class="badge badge-neutral">{{ s.course_count }} enrolled</span></td>
+                    <td>
+                        {% if s.gpa >= 3.7 %}
+                            <span class="badge badge-success">⭐ {{ "%.2f"|format(s.gpa) }}</span>
+                        {% elif s.gpa >= 3.0 %}
+                            <span class="badge badge-primary">{{ "%.2f"|format(s.gpa) }}</span>
+                        {% elif s.gpa > 0 %}
+                            <span class="badge badge-warning">{{ "%.2f"|format(s.gpa) }}</span>
+                        {% else %}
+                            <span class="badge badge-neutral">0.00</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if s.status == 'Active' %}
+                            <span class="badge badge-success">Active</span>
+                        {% else %}
+                            <span class="badge badge-danger">{{ s.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="viewStudentTranscript({{ s.student_id }})" title="View Transcript">
+                            📄 Transcript
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="openEditStudentModal({{ s.student_id }})" title="Edit Details">
+                            ✏️
+                        </button>
+                        <form method="POST" action="{{ url_for('student_delete_action', student_id=s.student_id) }}" style="display:inline;" onsubmit="return confirm('Delete this student record? This will delete associated enrollments.')">
+                            <button type="submit" class="btn btn-danger btn-sm" title="Delete Student">
+                                🗑️
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ==================================================================== -->
+<!-- MODAL: ADD STUDENT -->
+<!-- ==================================================================== -->
+<div class="modal-overlay" id="addStudentModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 class="modal-title">➕ Register New Student</h3>
+            <button class="modal-close" onclick="closeModal('addStudentModal')">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('api_students') }}">
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Roll Number *</label>
+                        <input type="text" name="roll_number" class="form-control" placeholder="e.g. STU2024015" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Department *</label>
+                        <select name="dept_id" class="form-control" required>
+                            {% for d in departments %}
+                            <option value="{{ d.dept_id }}">{{ d.dept_code }} - {{ d.dept_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">First Name *</label>
+                        <input type="text" name="first_name" class="form-control" placeholder="e.g. John" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Last Name *</label>
+                        <input type="text" name="last_name" class="form-control" placeholder="e.g. Doe" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Email Address *</label>
+                        <input type="email" name="email" class="form-control" placeholder="john.doe@student.edu" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="text" name="phone" class="form-control" placeholder="+1-555-0199">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Date of Birth</label>
+                        <input type="date" name="dob" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Gender</label>
+                        <select name="gender" class="form-control">
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addStudentModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Student</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==================================================================== -->
+<!-- MODAL: EDIT STUDENT -->
+<!-- ==================================================================== -->
+<div class="modal-overlay" id="editStudentModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 class="modal-title">✏️ Edit Student Profile</h3>
+            <button class="modal-close" onclick="closeModal('editStudentModal')">&times;</button>
+        </div>
+        <form id="editStudentForm" method="POST" action="">
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Roll Number</label>
+                        <input type="text" id="edit_roll_number" class="form-control" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Department *</label>
+                        <select name="dept_id" id="edit_dept_id" class="form-control" required>
+                            {% for d in departments %}
+                            <option value="{{ d.dept_id }}">{{ d.dept_code }} - {{ d.dept_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">First Name *</label>
+                        <input type="text" name="first_name" id="edit_first_name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Last Name *</label>
+                        <input type="text" name="last_name" id="edit_last_name" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Email Address *</label>
+                        <input type="email" name="email" id="edit_email" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        <input type="text" name="phone" id="edit_phone" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Date of Birth</label>
+                        <input type="date" name="dob" id="edit_dob" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select name="status" id="edit_status" class="form-control">
+                            <option value="Active">Active</option>
+                            <option value="Suspended">Suspended</option>
+                            <option value="Graduated">Graduated</option>
+                            <option value="Withdrawn">Withdrawn</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('editStudentModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==================================================================== -->
+<!-- MODAL: STUDENT TRANSCRIPT & COURSES -->
+<!-- ==================================================================== -->
+<div class="modal-overlay" id="studentTranscriptModal">
+    <div class="modal-box" style="max-width: 720px;">
+        <div class="modal-header">
+            <div>
+                <h3 class="modal-title" id="transcriptStudentName">Student Name</h3>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">
+                    <span id="transcriptRollNumber">Roll No</span> • <span id="transcriptDept">Dept</span> • <span id="transcriptEmail">Email</span>
+                </div>
+            </div>
+            <button class="modal-close" onclick="closeModal('studentTranscriptModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 12px 18px; border-radius: var(--radius-md); margin-bottom: 20px; border: 1px solid var(--border-color);">
+                <div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Calculated Cumulative GPA</div>
+                    <div style="font-size: 1.6rem; font-weight: 800; color: #34D399;" id="transcriptGPA">0.00</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Enrollment Status</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #FFF;" id="transcriptStatus">Active</div>
+                </div>
+            </div>
+
+            <h4 style="font-size: 0.95rem; margin-bottom: 10px; font-weight: 700;">📚 Enrolled Curricula & Grades</h4>
+            <div class="table-responsive">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Course Title</th>
+                            <th>Credits</th>
+                            <th>Instructor</th>
+                            <th>Term</th>
+                            <th>Grade</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transcriptEnrollmentsBody">
+                        <!-- Loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('studentTranscriptModal')">Close</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

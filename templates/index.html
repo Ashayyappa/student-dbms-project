@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block page_title %}
+<span>📊 System Overview & Analytics</span>
+{% endblock %}
+
+{% block content %}
+<!-- KPI Cards Grid -->
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-title">Total Students</span>
+            <div class="kpi-icon-badge">👨‍🎓</div>
+        </div>
+        <div class="kpi-value">{{ stats.total_students }}</div>
+        <div class="kpi-subtitle">Enrolled across all departments</div>
+    </div>
+
+    <div class="kpi-card success">
+        <div class="kpi-header">
+            <span class="kpi-title">Average GPA</span>
+            <div class="kpi-icon-badge">⭐</div>
+        </div>
+        <div class="kpi-value">{{ "%.2f"|format(stats.avg_gpa) }} <span style="font-size:1rem;color:var(--text-muted);">/ 4.0</span></div>
+        <div class="kpi-subtitle">Calculated dynamically via SQL trigger</div>
+    </div>
+
+    <div class="kpi-card info">
+        <div class="kpi-header">
+            <span class="kpi-title">Active Courses</span>
+            <div class="kpi-icon-badge">📚</div>
+        </div>
+        <div class="kpi-value">{{ stats.total_courses }}</div>
+        <div class="kpi-subtitle">{{ stats.total_departments }} Academic Departments</div>
+    </div>
+
+    <div class="kpi-card warning">
+        <div class="kpi-header">
+            <span class="kpi-title">Total Enrollments</span>
+            <div class="kpi-icon-badge">📝</div>
+        </div>
+        <div class="kpi-value">{{ stats.total_enrollments }}</div>
+        <div class="kpi-subtitle">Course registrations on record</div>
+    </div>
+
+    <div class="kpi-card purple">
+        <div class="kpi-header">
+            <span class="kpi-title">Faculty Members</span>
+            <div class="kpi-icon-badge">🧑‍🏫</div>
+        </div>
+        <div class="kpi-value">{{ stats.total_instructors }}</div>
+        <div class="kpi-subtitle">Teaching active curricula</div>
+    </div>
+</div>
+
+<!-- Middle Analytics Section -->
+<div class="grid-2">
+    <!-- Department Breakdown -->
+    <div class="card-panel">
+        <div class="panel-header">
+            <div>
+                <h3 class="panel-title">🏛️ Department Student Distribution</h3>
+                <p class="panel-subtitle">Student enrollment count per academic department</p>
+            </div>
+            <a href="{{ url_for('courses_page') }}" class="btn btn-secondary btn-sm">View Depts</a>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+            {% for dept in stats.dept_distribution %}
+            <div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px;">
+                    <span><strong>{{ dept.dept_code }}</strong> — {{ dept.dept_name }}</span>
+                    <span style="color: var(--primary-light); font-weight: 600;">{{ dept.student_count }} Students</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" style="width: {{ (dept.student_count / (stats.total_students if stats.total_students > 0 else 1) * 100)|round }}%;"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Top Students -->
+    <div class="card-panel">
+        <div class="panel-header">
+            <div>
+                <h3 class="panel-title">🏆 Top Performing Scholars</h3>
+                <p class="panel-subtitle">Ranked by cumulative GPA calculated via <code>trg_after_enrollment_grade_update</code></p>
+            </div>
+            <a href="{{ url_for('students_page') }}" class="btn btn-secondary btn-sm">All Students</a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Roll No</th>
+                        <th>Student Name</th>
+                        <th>Department</th>
+                        <th>GPA</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in stats.top_students %}
+                    <tr>
+                        <td><code>{{ s.roll_number }}</code></td>
+                        <td><strong>{{ s.name }}</strong></td>
+                        <td><span class="badge badge-info">{{ s.dept_name }}</span></td>
+                        <td><span class="badge badge-success">{{ "%.2f"|format(s.gpa) }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Section: Grade Distribution & Real-time Audit Logs -->
+<div class="grid-2">
+    <!-- Grade Distribution -->
+    <div class="card-panel">
+        <div class="panel-header">
+            <div>
+                <h3 class="panel-title">📈 Grade Allocation Summary</h3>
+                <p class="panel-subtitle">Distribution of completed and pending course grades</p>
+            </div>
+            <a href="{{ url_for('enrollments_page') }}" class="btn btn-secondary btn-sm">Manage Grades</a>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px;">
+            {% for g in stats.grade_distribution %}
+            <div style="flex: 1 1 120px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; text-align: center;">
+                <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase;">{{ g.grade }}</div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: #FFF; margin: 4px 0;">{{ g.count }}</div>
+                <div style="font-size: 0.72rem; color: var(--text-muted);">Enrollments</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Live DBMS Audit Logs -->
+    <div class="card-panel">
+        <div class="panel-header">
+            <div>
+                <h3 class="panel-title">🛡️ DBMS Trigger Audit Trail</h3>
+                <p class="panel-subtitle">Demonstrates automated logging from <code>audit_logs</code> table</p>
+            </div>
+            <span class="badge badge-neutral">Live Feed</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Action</th>
+                        <th>Target Table</th>
+                        <th>Description</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in stats.recent_logs %}
+                    <tr>
+                        <td>
+                            {% if log.action_type == 'INSERT' %}
+                                <span class="badge badge-success">INSERT</span>
+                            {% elif log.action_type == 'UPDATE_GRADE' %}
+                                <span class="badge badge-warning">GRADE</span>
+                            {% else %}
+                                <span class="badge badge-info">{{ log.action_type }}</span>
+                            {% endif %}
+                        </td>
+                        <td><code>{{ log.table_name }}</code></td>
+                        <td style="font-size: 0.82rem; color: var(--text-secondary);">{{ log.description }}</td>
+                        <td style="font-size: 0.75rem; color: var(--text-muted); white-space: nowrap;">{{ log.logged_at }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

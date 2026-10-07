@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+
+{% block page_title %}
+<span>📚 Courses & Academic Departments</span>
+{% endblock %}
+
+{% block content %}
+<!-- Top Header / Action Buttons -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+    <div>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">
+            Manage course offerings, credit requirements, instructor assignments, and departmental budgets.
+        </p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn btn-secondary" onclick="openModal('addDepartmentModal')">
+            <span>🏛️</span> Add Department
+        </button>
+        <button type="button" class="btn btn-primary" onclick="openModal('addCourseModal')">
+            <span>➕</span> Add Course
+        </button>
+    </div>
+</div>
+
+<!-- Department Overview Cards -->
+<div class="card-panel">
+    <div class="panel-header">
+        <div>
+            <h3 class="panel-title">🏛️ Academic Departments (1:N with Courses & Students)</h3>
+            <p class="panel-subtitle">Demonstrates Parent entity in Foreign Key relationships</p>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+        {% for d in departments %}
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <span class="badge badge-primary">{{ d.dept_code }}</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">{{ d.building or 'Campus Hall' }}</span>
+            </div>
+            <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 8px;">{{ d.dept_name }}</h4>
+            <div style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 12px;">
+                Budget: <strong style="color: #34D399;">${{ "{:,.2f}".format(d.budget) }}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px; color: var(--text-muted);">
+                <span>👨‍🎓 {{ d.student_count }} Students</span>
+                <span>📚 {{ d.course_count }} Courses</span>
+                <span>🧑‍🏫 {{ d.instructor_count }} Faculty</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Courses Table -->
+<div class="card-panel">
+    <div class="panel-header">
+        <div>
+            <h3 class="panel-title">📖 Course Curriculum Catalog</h3>
+            <p class="panel-subtitle">Normalized course records linked with Instructors and Departments</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Course Title</th>
+                    <th>Credits</th>
+                    <th>Department</th>
+                    <th>Assigned Instructor</th>
+                    <th>Semester</th>
+                    <th>Enrolled / Capacity</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in courses %}
+                <tr>
+                    <td><code>{{ c.course_code }}</code></td>
+                    <td><strong>{{ c.course_title }}</strong></td>
+                    <td><span class="badge badge-neutral">{{ c.credits }} Credits</span></td>
+                    <td><span class="badge badge-info">{{ c.dept_name }}</span></td>
+                    <td>
+                        {% if c.instructor_name %}
+                            <span>🧑‍🏫 {{ c.instructor_name }}</span>
+                        {% else %}
+                            <span style="color: var(--text-muted); font-style: italic;">Unassigned</span>
+                        {% endif %}
+                    </td>
+                    <td><span class="badge badge-primary">{{ c.semester_offered }}</span></td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-weight: 600;">{{ c.enrolled_students }} / {{ c.max_capacity }}</span>
+                            <div class="progress-bar-bg" style="width: 60px;">
+                                <div class="progress-bar-fill" style="width: {{ (c.enrolled_students / c.max_capacity * 100)|round }}%;"></div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ==================================================================== -->
+<!-- MODAL: ADD COURSE -->
+<!-- ==================================================================== -->
+<div class="modal-overlay" id="addCourseModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 class="modal-title">➕ Add New Course</h3>
+            <button class="modal-close" onclick="closeModal('addCourseModal')">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('api_courses') }}">
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Course Code *</label>
+                        <input type="text" name="course_code" class="form-control" placeholder="e.g. CS401" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Credits (1-6) *</label>
+                        <input type="number" name="credits" class="form-control" min="1" max="6" value="3" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Course Title *</label>
+                    <input type="text" name="course_title" class="form-control" placeholder="e.g. Distributed Database Systems" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Department *</label>
+                        <select name="dept_id" class="form-control" required>
+                            {% for d in departments %}
+                            <option value="{{ d.dept_id }}">{{ d.dept_code }} - {{ d.dept_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Assign Instructor</label>
+                        <select name="instructor_id" class="form-control">
+                            <option value="">-- Unassigned --</option>
+                            {% for i in instructors %}
+                            <option value="{{ i.instructor_id }}">{{ i.first_name }} {{ i.last_name }} ({{ i.dept_code }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Max Capacity</label>
+                        <input type="number" name="max_capacity" class="form-control" value="40" min="10" max="200">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Semester</label>
+                        <select name="semester_offered" class="form-control">
+                            <option value="Fall">Fall</option>
+                            <option value="Spring">Spring</option>
+                            <option value="Summer">Summer</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addCourseModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Course</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==================================================================== -->
+<!-- MODAL: ADD DEPARTMENT -->
+<!-- ==================================================================== -->
+<div class="modal-overlay" id="addDepartmentModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 class="modal-title">🏛️ Add Academic Department</h3>
+            <button class="modal-close" onclick="closeModal('addDepartmentModal')">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('api_departments') }}">
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Dept Code *</label>
+                        <input type="text" name="dept_code" class="form-control" placeholder="e.g. AI" maxlength="10" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Building / Location</label>
+                        <input type="text" name="building" class="form-control" placeholder="e.g. Shannon Hall">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Department Name *</label>
+                    <input type="text" name="dept_name" class="form-control" placeholder="e.g. Artificial Intelligence & Robotics" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Annual Budget ($)</label>
+                    <input type="number" step="1000" name="budget" class="form-control" placeholder="1000000.00" value="1000000.00">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addDepartmentModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Department</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block page_title %}
+<span>⚡ Interactive SQL Query Playground</span>
+{% endblock %}
+
+{% block content %}
+<div class="card-panel">
+    <div class="panel-header">
+        <div>
+            <h3 class="panel-title">💻 SQL Query Execution Terminal</h3>
+            <p class="panel-subtitle">Execute custom standard SQL commands (DDL, DML, Aggregations, Subqueries, Joins) directly against the database</p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn btn-secondary btn-sm" id="clearSqlBtn">Clear Editor</button>
+            <button type="button" class="btn btn-primary btn-sm" id="runSqlBtn">⚡ Execute Query (Ctrl+Enter)</button>
+        </div>
+    </div>
+
+    <!-- Quick Preset Query Badges -->
+    <div style="margin-bottom: 12px;">
+        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">
+            📌 Click to Load & Run Viva / Sample Queries:
+        </div>
+        <div class="preset-queries">
+            <button type="button" class="preset-btn" onclick="setSqlPreset(`SELECT roll_number, first_name || ' ' || last_name AS name, gpa, dept_name FROM students s JOIN departments d ON s.dept_id = d.dept_id ORDER BY gpa DESC;`)">
+                🏆 Top Students List
+            </button>
+            <button type="button" class="preset-btn" onclick="setSqlPreset(`SELECT d.dept_name, COUNT(s.student_id) AS student_count, ROUND(AVG(s.gpa), 2) AS avg_gpa FROM departments d JOIN students s ON d.dept_id = s.dept_id GROUP BY d.dept_name HAVING AVG(s.gpa) >= 3.60;`)">
+                📊 Depts with Avg GPA ≥ 3.60 (GROUP BY + HAVING)
+            </button>
+            <button type="button" class="preset-btn" onclick="setSqlPreset(`SELECT s.roll_number, s.first_name || ' ' || s.last_name AS student, c.course_code, c.course_title, d.dept_name, i.first_name || ' ' || i.last_name AS instructor, e.grade FROM enrollments e JOIN students s ON e.student_id = s.student_id JOIN courses c ON e.course_id = c.course_id JOIN departments d ON c.dept_id = d.dept_id LEFT JOIN instructors i ON c.instructor_id = i.instructor_id;`)">
+                🔗 4-Table Consolidated JOIN
+            </button>
+            <button type="button" class="preset-btn" onclick="setSqlPreset(`SELECT roll_number, first_name, last_name, gpa FROM students WHERE gpa > (SELECT AVG(gpa) FROM students WHERE gpa > 0) ORDER BY gpa DESC;`)">
+                📈 Above Average GPA (Nested Subquery)
+            </button>
+            <button type="button" class="preset-btn" onclick="setSqlPreset(`SELECT s.roll_number, s.first_name || ' ' || s.last_name AS student_name, s.gpa, d.dept_name FROM students s JOIN departments d ON s.dept_id = d.dept_id WHERE s.gpa = (SELECT MAX(sub.gpa) FROM students sub WHERE sub.dept_id = s.dept_id);`)">
+                ⭐ Top Student per Department (Correlated Subquery)
+            </button>
+            <button type="button" class="preset-btn" onclick="setSqlPreset(`SELECT d.dept_name, d.budget AS dept_budget, COALESCE(SUM(i.salary), 0) AS faculty_salary_total, ROUND(d.budget - COALESCE(SUM(i.salary), 0), 2) AS remaining_budget FROM departments d LEFT JOIN instructors i ON d.dept_id = i.dept_id GROUP BY d.dept_id;`)">
+                💰 Budget vs Salaries Analytics
+            </button>
+            <button type="button" class="preset-btn" onclick="setSqlPreset(`SELECT * FROM v_student_transcript WHERE grade = 'A+' OR grade = 'A';`)">
+                👁️ Querying Database View (v_student_transcript)
+            </button>
+            <button type="button" class="preset-btn" onclick="setSqlPreset(`SELECT log_id, table_name, action_type, description, logged_at FROM audit_logs ORDER BY log_id DESC LIMIT 15;`)">
+                🛡️ Query Trigger Audit Logs
+            </button>
+        </div>
+    </div>
+
+    <!-- SQL Editor -->
+    <div class="sql-editor-container">
+        <div class="sql-editor-header">
+            <span style="font-size: 0.78rem; font-family: var(--font-mono); color: var(--text-secondary);">SQL Input Editor (SQLite 3 Dialect)</span>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Press <kbd style="background:rgba(255,255,255,0.1); padding:2px 5px; border-radius:4px;">Ctrl</kbd> + <kbd style="background:rgba(255,255,255,0.1); padding:2px 5px; border-radius:4px;">Enter</kbd> to run</span>
+        </div>
+        <textarea id="sqlQueryInput" class="sql-textarea" placeholder="SELECT * FROM students JOIN departments ON students.dept_id = departments.dept_id;">SELECT s.roll_number, s.first_name || ' ' || s.last_name AS student_name, s.email, d.dept_name, s.gpa 
+FROM students s 
+JOIN departments d ON s.dept_id = d.dept_id 
+ORDER BY s.gpa DESC;</textarea>
+    </div>
+
+    <!-- Execution Status Bar -->
+    <div class="query-meta-bar">
+        <div>
+            <span>Status: </span><strong style="color: #FFF;">Ready</strong>
+        </div>
+        <div style="display: flex; gap: 16px;">
+            <span>Execution Time: <strong id="queryExecTime" style="color: #38BDF8;">0.00 ms</strong></span>
+            <span>Rows: <strong id="queryRowCount" style="color: #34D399;">0 rows</strong></span>
+        </div>
+    </div>
+
+    <!-- Results Container -->
+    <div id="sqlResultsOutput" class="sql-results-box">
+        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+            <p>Click <strong>⚡ Execute Query</strong> or select any preset above to view query execution results.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

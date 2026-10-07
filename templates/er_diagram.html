@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block page_title %}
+<span>🧩 Relational Schema & ER Visualizer</span>
+{% endblock %}
+
+{% block extra_head %}
+<!-- Mermaid JS for Interactive Diagram Rendering -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: 'dark' });</script>
+{% endblock %}
+
+{% block content %}
+<!-- ER Diagram Panel -->
+<div class="card-panel">
+    <div class="panel-header">
+        <div>
+            <h3 class="panel-title">🗺️ Entity-Relationship (ER) Diagram</h3>
+            <p class="panel-subtitle">Visual representation of entities, cardinalities (1:N, M:N decomposed), and foreign keys</p>
+        </div>
+        <span class="badge badge-primary">Normalized to 3NF</span>
+    </div>
+
+    <div style="background: #0D1117; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 20px; text-align: center; overflow-x: auto;">
+        <pre class="mermaid">
+erDiagram
+    DEPARTMENTS ||--o{ INSTRUCTORS : employs
+    DEPARTMENTS ||--o{ STUDENTS : houses
+    DEPARTMENTS ||--o{ COURSES : offers
+    INSTRUCTORS ||--o{ COURSES : teaches
+    STUDENTS ||--o{ ENROLLMENTS : registers
+    COURSES ||--o{ ENROLLMENTS : contains
+    
+    DEPARTMENTS {
+        int dept_id PK
+        string dept_code UK
+        string dept_name
+        string building
+        decimal budget
+    }
+    
+    INSTRUCTORS {
+        int instructor_id PK
+        string first_name
+        string last_name
+        string email UK
+        decimal salary
+        date hire_date
+        int dept_id FK
+    }
+    
+    STUDENTS {
+        int student_id PK
+        string roll_number UK
+        string first_name
+        string last_name
+        string email UK
+        decimal gpa
+        int dept_id FK
+        string status
+    }
+    
+    COURSES {
+        int course_id PK
+        string course_code UK
+        string course_title
+        int credits
+        int dept_id FK
+        int instructor_id FK
+    }
+    
+    ENROLLMENTS {
+        int enrollment_id PK
+        int student_id FK
+        int course_id FK
+        string semester
+        int academic_year
+        string grade
+        decimal numeric_grade
+        string status
+    }
+    
+    AUDIT_LOGS {
+        int log_id PK
+        string table_name
+        string action_type
+        int record_id
+        string description
+        timestamp logged_at
+    }
+        </pre>
+    </div>
+</div>
+
+<!-- Table Schema Cards Grid -->
+<div class="panel-header" style="margin-top: 28px;">
+    <div>
+        <h3 class="panel-title">📋 Physical Database Tables & Attribute Types</h3>
+        <p class="panel-subtitle">Directly introspected from SQLite catalog (<code>PRAGMA table_info</code>)</p>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px;">
+    {% for tbl_name, tbl in metadata.tables.items() %}
+    <div class="card-panel" style="margin-bottom: 0;">
+        <div class="panel-header" style="margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.2rem;">📁</span>
+                <strong style="font-size: 1rem; color: #FFF; font-family: var(--font-mono);">{{ tbl_name }}</strong>
+            </div>
+            <span class="badge badge-neutral">{{ tbl.row_count }} records</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="custom-table" style="font-size: 0.8rem;">
+                <thead>
+                    <tr>
+                        <th>Field</th>
+                        <th>Type</th>
+                        <th>Attributes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for col in tbl.columns %}
+                    <tr>
+                        <td>
+                            <code style="color: var(--text-primary);">{{ col.name }}</code>
+                        </td>
+                        <td><span style="color: #38BDF8; font-family: var(--font-mono);">{{ col.type or 'TEXT' }}</span></td>
+                        <td>
+                            {% if col.pk %}
+                                <span class="badge badge-primary" style="font-size:0.65rem;">PK</span>
+                            {% endif %}
+                            {% if col.notnull %}
+                                <span class="badge badge-neutral" style="font-size:0.65rem;">NOT NULL</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if tbl.foreign_keys|length > 0 %}
+        <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); font-size: 0.75rem; color: var(--text-muted);">
+            <strong>🔗 Foreign Keys:</strong>
+            <ul style="list-style: none; margin-top: 4px; display: flex; flex-direction: column; gap: 4px;">
+                {% for fk in tbl.foreign_keys %}
+                <li><code>{{ fk.from }}</code> &rarr; <code>{{ fk.table }}({{ fk.to }})</code></li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Views and Triggers Section -->
+<div class="grid-2" style="margin-top: 28px;">
+    <!-- Active Views -->
+    <div class="card-panel">
+        <div class="panel-header">
+            <h3 class="panel-title">👁️ Active Database Views</h3>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+            {% for v in metadata.views %}
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px;">
+                <div style="font-weight: 700; color: #818CF8; font-family: var(--font-mono); margin-bottom: 6px;">{{ v.name }}</div>
+                <pre style="font-size: 0.75rem; color: var(--text-secondary); background: #080C14; padding: 10px; border-radius: 6px; overflow-x: auto; white-space: pre-wrap; font-family: var(--font-mono);">{{ v.sql }}</pre>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Active Triggers -->
+    <div class="card-panel">
+        <div class="panel-header">
+            <h3 class="panel-title">⚡ Active Database Triggers</h3>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+            {% for trg in metadata.triggers %}
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-weight: 700; color: #FBBF24; font-family: var(--font-mono);">{{ trg.name }}</span>
+                    <span class="badge badge-warning">on {{ trg.tbl_name }}</span>
+                </div>
+                <pre style="font-size: 0.75rem; color: var(--text-secondary); background: #080C14; padding: 10px; border-radius: 6px; overflow-x: auto; white-space: pre-wrap; font-family: var(--font-mono);">{{ trg.sql }}</pre>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
