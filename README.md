@@ -1,10 +1,10 @@
-# 🎓 EduTrack DBMS — University Database Management System
+#  EduTrack DBMS — University Database Management System
 
 A normalized Relational Database Management System (RDBMS) project built with **SQLite 3**, **Python/Flask**, and an **Interactive Web Dashboard**.
 
 ---
 
-## 🌟 Key Highlights & DBMS Concepts Demonstrated
+##  Key Highlights & DBMS Concepts Demonstrated
 
 | Feature / Concept | Description |
 |---|---|
@@ -19,7 +19,7 @@ A normalized Relational Database Management System (RDBMS) project built with **
 
 ---
 
-## 🚀 Quick Start (One-Click Run)
+## Quick Start (One-Click Run)
 
 ### Prerequisites
 - Python 3.8+ (Preinstalled on macOS/Linux/Windows)
@@ -44,7 +44,7 @@ Open your browser and navigate to: **[http://127.0.0.1:5050](http://127.0.0.1:50
 
 ---
 
-## 🗺️ Entity-Relationship (ER) Diagram
+##  Entity-Relationship (ER) Diagram
 
 ```mermaid
 erDiagram
@@ -116,7 +116,7 @@ erDiagram
 
 ---
 
-## 📂 Project Structure
+##  Project Structure
 
 ```
 student_dbms_project/
@@ -146,7 +146,7 @@ student_dbms_project/
 
 ---
 
-## 🧪 Testing the DBMS Trigger
+##  Testing the DBMS Trigger
 
 1. Navigate to **Enrollments & Grades** in the web interface.
 2. Select any enrollment and click **⭐ Assign Grade**.
@@ -156,5 +156,5 @@ student_dbms_project/
 
 ---
 
-## 📜 License
+##  License
 Open-source academic template for Computer Science & Engineering students.
